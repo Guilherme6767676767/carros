@@ -118,10 +118,10 @@ function jogar() {
 
   // --- CONTROLES E FÍSICA DO CARRO ---
   let inclinacao = 0; // Para rotacionar o carro levemente ao virar
-  if (keyIsDown(LEFT_ARROW)) {
+  if (keyIsDown(LEFT_ARROW) || keyIsDown(65)) { // Seta Esq ou 'A'
     velocidadeX -= 0.6;
     inclinacao = -0.15;
-  } else if (keyIsDown(RIGHT_ARROW)) {
+  } else if (keyIsDown(RIGHT_ARROW) || keyIsDown(68)) { // Seta Dir ou 'D'
     velocidadeX += 0.6;
     inclinacao = 0.15;
   } else {
