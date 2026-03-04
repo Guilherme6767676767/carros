@@ -1,6 +1,7 @@
 let carroX;
 let carroY;
 let velocidadeX;
+let velocidadeY;
 let estadoJogo = "MENU"; // "MENU", "JOGANDO", "GAMEOVER", "LOJA"
 let moedasTotais = 0; // Persistente
 let moedasPartida;
@@ -58,6 +59,7 @@ function iniciarPartida() {
   carroX = 200;
   carroY = 500;
   velocidadeX = 0;
+  velocidadeY = 0;
   velocidadePista = 5;
   moedasPartida = 0;
   scoreDistancia = 0;
@@ -98,9 +100,11 @@ function desenharCenarioFundo() {
   rect(350, 0, 5, height);
 
   fill(0, 255, 255);
+  // Usa "velocidadePista" do escopo global se "velocidadeAparente" não estiver definida ali
+  let velocidadeCenario = typeof velocidadeAparente !== 'undefined' ? velocidadeAparente : velocidadePista;
   for (let i = 0; i < linhasEstrada.length; i++) {
     rect(width / 2 - 3, linhasEstrada[i], 6, 35);
-    if (estadoJogo === "JOGANDO") linhasEstrada[i] += velocidadePista;
+    if (estadoJogo === "JOGANDO") linhasEstrada[i] += velocidadeCenario;
     if (linhasEstrada[i] > height) linhasEstrada[i] = -60;
   }
 }
@@ -128,8 +132,34 @@ function jogar() {
     velocidadeX *= 0.85; // Atrito lateral
   }
 
+  // Aceleração (W / Cima) e Freio (S / Baixo)
+  if (keyIsDown(UP_ARROW) || keyIsDown(87)) { // Seta Cima ou 'W'
+    velocidadeY -= 0.5; // Vai pra frente
+  } else if (keyIsDown(DOWN_ARROW) || keyIsDown(83)) { // Seta Baixo ou 'S'
+    velocidadeY += 0.8; // Freia (vai pra trás)
+  } else {
+    // Se não apertar nada, tendência de voltar pra posição inicial (Y = 480)
+    if (carroY < 480) {
+      velocidadeY += 0.2; // Volta pra trás aos poucos se tiver acelerado
+    } else if (carroY > 520) {
+      velocidadeY -= 0.2; // Volta pra frente se tiver freado muito
+    } else {
+      velocidadeY *= 0.8; // Atrito base Y no meio
+    }
+  }
+
   velocidadeX = constrain(velocidadeX, -7, 7);
   carroX += velocidadeX;
+
+  // Limites da velocidade e posição Vertical
+  velocidadeY = constrain(velocidadeY, -4, 3);
+  carroY += velocidadeY;
+  carroY = constrain(carroY, 150, 530); // Não deixa sair muito da tela
+
+  // Opcional: Modificar a velocidade virtual baseada no freio
+  let velocidadeAparente = velocidadePista;
+  if (velocidadeY > 0) velocidadeAparente *= 0.7; // Sensação de que freou tudo ao redor
+  if (velocidadeY < 0) velocidadeAparente *= 1.3; // Turbo
 
   // Colisão com as bordas da pista
   if (carroX < 65) {
@@ -156,7 +186,7 @@ function jogar() {
   }
 
   // --- ATUALIZAR E DESENHAR PARTÍCULAS ---
-  atualizarDesenharParticulas();
+  atualizarDesenharParticulas(velocidadeAparente);
 
   // --- DESENHAR CARRO DO JOGADOR ---
   desenharCarro(carroX, carroY, carrosLoja[carroSelecionado], inclinacao);
@@ -179,7 +209,7 @@ function jogar() {
     let item = obstaculos[i];
 
     if (item.tipo === 'moeda') {
-      item.y += velocidadePista; // desce com a pista
+      item.y += velocidadeAparente; // desce com a pista
 
       // Desenha a moeda
       push();
@@ -207,7 +237,8 @@ function jogar() {
       }
     } else {
       // Lógica de CARROS OBSTÁCULOS
-      item.atualizar();
+      // Usa a velocidadeAparente para dar efeito de câmera quando freia/acelera
+      item.y += (velocidadeAparente - item.velY) + (nivel * 0.3);
       item.desenhar();
 
       let bateuX = abs(carroX - item.x) < 32;
@@ -232,7 +263,7 @@ function jogar() {
 }
 
 function desenharGameOver() {
-  atualizarDesenharParticulas(); // Continua animando explosão
+  atualizarDesenharParticulas(velocidadePista); // Continua animando explosão
   desenharCarro(carroX, carroY, color(100), 0); // Carro destruido (cinza)
 
   fill(0, 180);
@@ -453,11 +484,6 @@ class Obstaculo {
     this.tipo = random([1, 2, 3]); // Tipos diferentes de carros
   }
 
-  atualizar() {
-    // A velocidade aparente é a vel da pista menos a velocidade real do carro
-    this.y += (velocidadePista - this.velY) + (nivel * 0.3);
-  }
-
   desenhar() {
     desenharCarro(this.x, this.y, this.cor, 0);
   }
@@ -473,9 +499,9 @@ class ParticulaEscapamento {
     this.alpha = 150;
     this.tamanho = random(3, 6);
   }
-  atualizar() {
+  atualizar(velBaseY) {
     this.x += this.vx;
-    this.y += this.vy + velocidadePista; // Fica para trás dependendo da pista
+    this.y += this.vy + (velBaseY || velocidadePista); // Fica para trás dependendo da pista
     this.alpha -= 5;
     this.tamanho += 0.2;
   }
@@ -494,8 +520,8 @@ class ParticulaFumaca {
     this.tamanho = 8;
     this.cor = corEscura;
   }
-  atualizar() {
-    this.y += velocidadePista; // Move junto com o asfalto
+  atualizar(velBaseY) {
+    this.y += (velBaseY || velocidadePista); // Move junto com o asfalto
     this.alpha -= 2;
   }
   desenhar() {
@@ -514,9 +540,9 @@ class Faisca {
     this.vida = 255;
     this.amarelo = amarelo;
   }
-  atualizar() {
+  atualizar(velBaseY) {
     this.x += this.vx;
-    this.y += this.vy + velocidadePista / 2;
+    this.y += this.vy + ((velBaseY || velocidadePista) / 2);
     this.vida -= 15;
   }
   desenhar() {
@@ -531,10 +557,10 @@ function gerarFaiscas(x, y, amarelo = false) {
   particulas.push(new Faisca(x, y, amarelo));
 }
 
-function atualizarDesenharParticulas() {
+function atualizarDesenharParticulas(velAparente) {
   for (let i = particulas.length - 1; i >= 0; i--) {
     let p = particulas[i];
-    p.atualizar();
+    p.atualizar(velAparente);
     p.desenhar();
 
     // Remove partículas invisíveis
@@ -563,9 +589,10 @@ function atualizarDesenharPredios() {
     gerarPredio();
   }
 
+  let velocidadeCenario = (estadoJogo === 'JOGANDO' && typeof velocidadeY !== 'undefined') ? (velocidadeY < 0 ? velocidadePista * 1.3 : (velocidadeY > 0 ? velocidadePista * 0.7 : velocidadePista)) : velocidadePista;
   for (let i = predios.length - 1; i >= 0; i--) {
     let p = predios[i];
-    p.y += velocidadePista * 0.8; // Efeito parallax (prédios movem um pouco mais devagar que o chão)
+    p.y += velocidadeCenario * 0.8; // Efeito parallax (prédios movem um pouco mais devagar que o chão)
 
     // Corpo do prédio (Sombra e profundidade)
     fill(0, 100);
