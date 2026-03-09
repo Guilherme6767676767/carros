@@ -1,30 +1,27 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jogo do Carro Rosa</title>
-  <!-- Importando a biblioteca p5.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
-  <style>
-    body {
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      background-color: #222;
-      font-family: sans-serif;
-    }
-    /* Estilo para dar um destaque ao canvas do jogo */
-    canvas {
-      box-shadow: 0 0 20px rgba(255, 20, 147, 0.5);
-      border-radius: 5px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo do Carro Rosa 3D - Ultra Realista</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Importando o seu código do jogo -->
-  <script src="sketch.js"></script>
+    <div id="game-container"></div>
+    <div id="dashboard">
+        <!-- Overlay the interior of the car using CSS/HTML for realism without heavy 3D models -->
+        <div id="steering-wheel"></div>
+        <div id="speedometer">0 km/h</div>
+        <div id="score">Distância: 0m</div>
+    </div>
+    <div id="game-over" style="display: none;">
+        <h1>BATIDA!</h1>
+        <p>Você bateu o seu Carro Rosa!</p>
+        <button onclick="location.reload()">Tentar Novamente</button>
+    </div>
+    
+    <!-- Three.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>
