@@ -5,23 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jogo do Carro Rosa 3D - Ultra Realista</title>
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Import map for Three.js and GLTFLoader from jspm/unpkg/cdnjs -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
 </head>
 <body>
     <div id="game-container"></div>
     <div id="dashboard">
-        <!-- Overlay the interior of the car using CSS/HTML for realism without heavy 3D models -->
+        <!-- O carro agora será visto totalmente de dentro como requested -->
+        <div id="windshield-frame"></div>
         <div id="steering-wheel"></div>
         <div id="speedometer">0 km/h</div>
         <div id="score">Distância: 0m</div>
     </div>
+    
+    <div id="loading" style="display: flex;">
+        <h1>Carregando Pista Realista...</h1>
+    </div>
+
     <div id="game-over" style="display: none;">
         <h1>BATIDA!</h1>
-        <p>Você bateu o seu Carro Rosa!</p>
+        <p>Seu Carro Rosa foi amassado!</p>
         <button onclick="location.reload()">Tentar Novamente</button>
     </div>
     
-    <!-- Three.js from CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="main.js"></script>
+    <!-- ES Modules -->
+    <script type="module" src="main.js"></script>
 </body>
 </html>
