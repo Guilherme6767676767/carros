@@ -3,40 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jogo do Carro Rosa 3D - Ultra Realista</title>
+    <title>Racing Limits - Day City</title>
     <link rel="stylesheet" href="style.css">
     
-    <!-- Import map for Three.js and GLTFLoader from jspm/unpkg/cdnjs -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
-            }
-        }
-    </script>
+    <!-- Three.js from CDN for performance -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
     <div id="game-container"></div>
-    <div id="dashboard">
-        <!-- O carro agora será visto totalmente de dentro como requested -->
-        <div id="windshield-frame"></div>
-        <div id="steering-wheel"></div>
-        <div id="speedometer">0 km/h</div>
-        <div id="score">Distância: 0m</div>
+    
+    <!-- UI Overlay for Dashboard & Mirror -->
+    <div id="overlay">
+        <!-- Rearview Mirror (Center Top) -->
+        <div id="rearview-mirror">
+            <div class="mirror-reflection"></div>
+        </div>
+
+        <!-- Windshield Frame (A-Pillars) -->
+        <div id="left-pillar" class="pillar"></div>
+        <div id="right-pillar" class="pillar"></div>
+
+        <!-- Dashboard Bottom -->
+        <div id="dashboard">
+            <!-- Left Vent -->
+            <div class="air-vent left"></div>
+            <!-- Center Console -->
+            <div id="center-console">
+                <div class="air-vent"></div>
+                <div class="air-vent"></div>
+                <div class="screen">GPS</div>
+            </div>
+            <!-- Right Vent -->
+            <div class="air-vent right"></div>
+        </div>
+
+        <!-- Driver POV (Steering Wheel + Hands + Speedometer) -->
+        <div id="driver-pov">
+            <!-- Illusion of Driver Hands holding the wheel -->
+            <div id="left-hand" class="hand"></div>
+            <div id="right-hand" class="hand"></div>
+            
+            <div id="steering-wheel">
+                <div class="wheel-center">
+                    <div id="speedometer">0<br><span style="font-size:12px;color:#aaa">km/h</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Score top right -->
+        <div id="score">Pontos: 0</div>
     </div>
     
-    <div id="loading" style="display: flex;">
-        <h1>Carregando Pista Realista...</h1>
-    </div>
+    <div id="loading">Carregando Cidade...</div>
 
     <div id="game-over" style="display: none;">
         <h1>BATIDA!</h1>
-        <p>Seu Carro Rosa foi amassado!</p>
-        <button onclick="location.reload()">Tentar Novamente</button>
+        <p>Você bateu no trânsito!</p>
+        <button onclick="location.reload()">Correr Novamente</button>
     </div>
     
-    <!-- ES Modules -->
-    <script type="module" src="main.js"></script>
+    <!-- Game Source -->
+    <script src="main.js"></script>
 </body>
 </html>

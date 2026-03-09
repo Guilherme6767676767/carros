@@ -4,8 +4,9 @@ body, html {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background-color: #000;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #87CEEB; /* Sky blue fallback */
+    font-family: 'Arial', sans-serif;
+    user-select: none;
 }
 
 #game-container {
@@ -17,113 +18,208 @@ body, html {
     z-index: 1;
 }
 
-#dashboard {
+#overlay {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 100%; /* Full screen overlay now */
-    z-index: 2;
-    pointer-events: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    padding: 20px;
-    box-sizing: border-box;
-    /* Textured leather overlay for dashboard */
-}
-
-#windshield-frame {
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
-    box-shadow: inset 0px 40px 100px #000, inset 40px 0px 60px #111, inset -40px 0px 60px #111;
-    border-top: 100px solid #111;
-    border-left: 150px solid #111;
-    border-right: 150px solid #111;
-    border-bottom: 250px solid #1c1c1c; /* Base of dashboard */
-    border-radius: 60px 60px 0 0;
-    box-sizing: border-box;
-    pointer-events: none;
+    z-index: 2;
+    pointer-events: none; /* Let clicks pass to canvas */
+}
+
+/* --- REARVIEW MIRROR --- */
+#rearview-mirror {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    height: 80px;
+    background: #111;
+    border-radius: 40px;
+    border: 5px solid #222;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.mirror-reflection {
+    width: 280px;
+    height: 60px;
+    background: linear-gradient(to bottom, #87CEEB 40%, #555 50%, #333 100%);
+    border-radius: 30px;
+    opacity: 0.8;
+}
+
+/* --- A-PILLARS --- */
+.pillar {
+    position: absolute;
+    top: 0;
+    width: 120px;
+    height: 100%;
+    background: linear-gradient(to right, #1a1a1a, #2a2a2a);
+    box-shadow: inset -10px 0 20px rgba(0,0,0,0.8);
+}
+
+#left-pillar {
+    left: -40px;
+    transform: skewX(-15deg);
+}
+
+#right-pillar {
+    right: -40px;
+    transform: skewX(15deg);
+    box-shadow: inset 10px 0 20px rgba(0,0,0,0.8);
+    background: linear-gradient(to left, #1a1a1a, #2a2a2a);
+}
+
+/* --- DASHBOARD --- */
+#dashboard {
+    position: absolute;
+    bottom: -20px;
+    width: 100%;
+    height: 20%; /* Reduzido de 35% para ficar mais longe */
+    background: linear-gradient(to top, #0a0a0a 20%, #202020 80%, #333 100%);
+    border-top: 15px solid #111;
+    border-radius: 50% 50% 0 0 / 20px 20px 0 0;
+    box-shadow: 0 -20px 40px rgba(0,0,0,0.9);
+    display: flex;
+    justify-content: center;
+}
+
+.air-vent {
+    width: 80px;
+    height: 40px;
+    background: #000;
+    border: 3px solid #444;
+    border-radius: 5px;
+    margin: 10px;
+    box-shadow: inset 0 5px 10px rgba(0,0,0,0.8);
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 4px, #333 4px, #333 8px);
+}
+
+.air-vent.left { position: absolute; left: 15%; top: 15px; }
+.air-vent.right { position: absolute; right: 15%; top: 15px; }
+
+#center-console {
+    width: 280px;
+    height: 100%;
+    background: #111;
+    border-radius: 20px 20px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding-top: 10px;
+    border-left: 2px solid #333;
+    border-right: 2px solid #333;
+}
+
+.screen {
+    width: 220px;
+    height: 100px;
+    background: #002244;
+    border: 3px solid #000;
+    border-radius: 10px;
+    color: #00ffcc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: monospace;
+    font-size: 20px;
+    box-shadow: inset 0 0 20px rgba(0,255,200,0.2);
+}
+
+/* --- DRIVER POV (WHEEL & HANDS) --- */
+#driver-pov {
+    position: absolute;
+    bottom: -50px;
+    left: 25%;
+    width: 500px;
+    height: 500px;
+    transform: scale(0.65); /* Escala tudo pra 65% para simular visão afastada */
+    transform-origin: bottom center;
 }
 
 #steering-wheel {
     position: absolute;
-    bottom: -150px;
+    bottom: 0px;
     left: 50%;
     transform: translateX(-50%);
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle, transparent 40%, rgba(20, 20, 20, 0.9) 45%, #111 65%);
+    width: 450px;
+    height: 450px;
+    background: radial-gradient(transparent 55%, #1a1a1a 60%, #000 65%);
     border-radius: 50%;
-    border: 45px solid #ff1493; /* Pink Details */
-    box-shadow: inset 0 0 40px rgba(0,0,0,0.8), 0 30px 50px rgba(0,0,0,0.9);
-    transition: transform 0.05s ease-out;
+    border: 35px solid #222; /* Volante de couro escuro */
+    box-shadow: inset 0 0 30px #000, 0 20px 40px rgba(0,0,0,0.8);
+    transition: transform 0.05s ease-out; /* Smooth steering */
     z-index: 5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-/* Base and spokes of steering wheel */
-#steering-wheel::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -20%);
-    width: 300px;
-    height: 200px;
-    background: linear-gradient(to bottom, #222, #000);
-    border-radius: 40px;
+.wheel-center {
+    width: 200px;
+    height: 150px;
+    background: linear-gradient(to bottom, #2a2a2a, #111);
+    border-radius: 30px;
     box-shadow: 0 5px 15px #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-/* Horizontal spoke */
 #steering-wheel::before {
     content: '';
     position: absolute;
-    top: 50%;
-    left: -20px;
-    width: 640px;
-    height: 60px;
+    width: 480px;
+    height: 50px;
     background: #111;
-    transform: translateY(-50%);
+    z-index: -1;
     border-radius: 10px;
 }
 
 #speedometer {
-    position: absolute;
-    bottom: 80px;
-    right: calc(50% - 400px);
-    width: 150px;
-    height: 150px;
-    background: radial-gradient(circle, #222, #000);
-    border: 10px solid #111;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 32px;
+    color: white;
+    font-size: 40px;
+    text-align: center;
+    font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
-    color: #ff1493;
-    text-shadow: 0 0 15px #ff1493;
-    box-shadow: inset 0 0 20px #000, 0 10px 20px rgba(0,0,0,0.8);
-    z-index: 4;
+    text-shadow: 0 0 10px #00ffff;
 }
 
+/* Hands simulation */
+.hand {
+    position: absolute;
+    width: 80px;
+    height: 140px;
+    background: #cc9966; /* Skin tone */
+    border-radius: 40px;
+    z-index: 10;
+    box-shadow: inset -10px -10px 20px rgba(0,0,0,0.3);
+}
+
+#left-hand {
+    top: 50px;
+    left: -20px;
+    transform: rotate(30deg);
+}
+
+#right-hand {
+    top: 50px;
+    right: -20px;
+    transform: rotate(-30deg);
+}
+
+/* --- OTHER UI --- */
 #score {
     position: absolute;
-    bottom: 80px;
-    left: calc(50% - 400px);
-    font-size: 28px;
+    top: 20px;
+    right: 30px;
+    font-size: 32px;
     font-weight: bold;
     color: #fff;
-    background: #111;
-    padding: 15px 30px;
-    border-radius: 15px;
-    border: 3px solid #333;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.8);
-    z-index: 4;
+    text-shadow: 2px 2px 5px #000;
 }
 
 #loading {
@@ -132,13 +228,15 @@ body, html {
     left: 0;
     width: 100%;
     height: 100%;
-    background: #000;
-    color: #ff1493;
-    z-index: 20;
+    background: #87CEEB;
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 24px;
+    z-index: 20;
+    text-shadow: 2px 2px 5px #000;
 }
 
 #game-over {
@@ -147,42 +245,19 @@ body, html {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.85);
-    z-index: 10;
+    background: rgba(0,0,0,0.8);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    z-index: 30;
     color: white;
 }
 
-#game-over h1 {
-    font-size: 100px;
-    color: #ff0000;
-    text-shadow: 0 0 30px #ff0000;
-    margin: 0 0 20px 0;
-}
-
-#game-over p {
-    font-size: 30px;
-    margin-bottom: 40px;
-}
-
+#game-over h1 { color: #ff3333; font-size: 80px; margin: 0; text-shadow: 0 0 20px #ff0000; }
+#game-over p { font-size: 30px; }
 #game-over button {
-    padding: 20px 40px;
-    font-size: 28px;
-    font-weight: bold;
-    background: #ff1493;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    box-shadow: 0 0 20px #ff1493;
-    transition: 0.2s;
+    padding: 15px 30px; font-size: 24px; background: #ff3333; color: white;
+    border: none; border-radius: 10px; cursor: pointer; margin-top: 20px;
 }
-
-#game-over button:hover {
-    background: #fff;
-    color: #ff1493;
-    transform: scale(1.05);
-}
+#game-over button:hover { background: white; color: #ff3333; }

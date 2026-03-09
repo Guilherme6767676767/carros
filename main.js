@@ -1,6 +1,4 @@
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
+// --- PERFOMANCE OPTIMIZATION: REMOVED HEAVY SHADOWS & PROCEDURAL COMPLEXITY ---
 let scene, camera, renderer;
 let speed = 2.0;
 let distance = 0;
@@ -10,6 +8,7 @@ let steering = 0;
 let roadMarkers = [];
 let obstacles = [];
 let roadGroup;
+let cityBuildings = [];
 
 let isGameOver = false;
 
@@ -19,26 +18,44 @@ const scoreText = document.getElementById('score');
 const steeringWheel = document.getElementById('steering-wheel');
 const gameOverScreen = document.getElementById('game-over');
 const loadingScreen = document.getElementById('loading');
+const leftHand = document.getElementById('left-hand');
+const rightHand = document.getElementById('right-hand');
+const mirrorReflect = document.querySelector('.mirror-reflection');
 
-// Car Model
-let enemyCarModel = null;
-const loader = new GLTFLoader();
+// Materiais reutilizados (Performance boost: em vez de criar material toda hora, criamos 1x e reusamos)
+const buildingGeo = new THREE.BoxGeometry(10, 40, 10);
+const matRoad = new THREE.MeshBasicMaterial({ color: 0x333333 }); // Sem necessidade de calculo de luz na estrada pra salvar FPS
+const matMarker = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const matGrass = new THREE.MeshBasicMaterial({ color: 0x33aa33 }); // Grama diurna
+
+// Cores dos carros inimigos
+const carColors = [
+    new THREE.MeshLambertMaterial({color: 0xff3333}), // Vermelho
+    new THREE.MeshLambertMaterial({color: 0x3333ff}), // Azul
+    new THREE.MeshLambertMaterial({color: 0xcccccc}), // Prata
+    new THREE.MeshLambertMaterial({color: 0xcccc00}), // Amarelo
+    new THREE.MeshLambertMaterial({color: 0x111111})  // Preto
+];
+
+// Car model base (Caixa simples: Altissima performance)
+const carGeo = new THREE.BoxGeometry(3.5, 1.5, 8.0);
+const windowGeo = new THREE.BoxGeometry(3.0, 1.0, 4.0);
+const matWindow = new THREE.MeshBasicMaterial({ color: 0x111111 });
 
 function init() {
     scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x111122, 0.008); // Neblina mais leve e suave
+    scene.background = new THREE.Color(0x87CEEB); 
+    // Neblina cinza claro pra misturar estrada e ceu sem ficar azul berrante no chao
+    scene.fog = new THREE.Fog(0xb4d3e0, 100, 500); 
     
-    // Câmera perfeitamente posicionada na visão do motorista
-    camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 2000);
-    camera.position.set(-1.0, 1.3, 1.5); // Deslocado pra esquerda (banco do motorista)
+    // Câmera perfeitamente posicionada na visão do motorista (esquerda)
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 700);
+    camera.position.set(-1.0, 1.3, 1.5); 
 
-    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    // Renderizador otimizado
+    renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    // Melhoramento de cor e realismo
-    renderer.outputEncoding = THREE.sRGBEncoding;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Limita o pixel ratio em telas 4k pra não travar
     document.getElementById('game-container').appendChild(renderer.domElement);
 
     createEnvironment();
@@ -48,68 +65,9 @@ function init() {
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
 
-    // Load Car Model BEFORE starting the game loop
-    loadCarModel();
-}
-
-function loadCarModel() {
-    // Usando um modelo GLTF de carro genérico gratuito de um CDN público focado em open source assets
-    // Neste caso, vamos construir um carro em low-poly mas detalhado proceduralmente caso o link falhe,
-    // Mas tentaremos carregar um shape realista via BoxGemoetries detalhados para garantir que funcione de imediato e sem CORS issues
-    
-    // Criar um modelo de carro realista procedural (melhor que um cubo)
-    enemyCarModel = new THREE.Group();
-    
-    // Chassi
-    const chassisGeo = new THREE.BoxGeometry(4.2, 1.2, 9);
-    const chassisMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.8 });
-    const chassis = new THREE.Mesh(chassisGeo, chassisMat);
-    chassis.position.y = 0.8;
-    chassis.castShadow = true;
-    enemyCarModel.add(chassis);
-
-    // Cabine do carro (Vidros e teto)
-    const cabinGeo = new THREE.BoxGeometry(3.6, 1.0, 4.5);
-    const cabinMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0.9 });
-    const cabin = new THREE.Mesh(cabinGeo, cabinMat);
-    cabin.position.set(0, 1.9, -0.5);
-    cabin.castShadow = true;
-    enemyCarModel.add(cabin);
-    
-    // Rodas
-    const wheelGeo = new THREE.CylinderGeometry(0.7, 0.7, 0.5, 16);
-    wheelGeo.rotateZ(Math.PI / 2);
-    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
-    
-    const positions = [
-        [-2.2, 0.7, 2.5], [2.2, 0.7, 2.5], 
-        [-2.2, 0.7, -3.0], [2.2, 0.7, -3.0]
-    ];
-    
-    positions.forEach(pos => {
-        const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-        wheel.position.set(...pos);
-        wheel.castShadow = true;
-        enemyCarModel.add(wheel);
-    });
-
-    // Lanternas traseiras (Neon Red)
-    const taillightMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    const taillightL = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.3, 0.1), taillightMat);
-    taillightL.position.set(-1.4, 1.0, 4.51);
-    const taillightR = taillightL.clone();
-    taillightR.position.set(1.4, 1.0, 4.51);
-    
-    // Efeito de brilho na lanterna
-    const glowL = new THREE.PointLight(0xff0000, 1, 10);
-    glowL.position.set(-1.4, 1.0, 5.0);
-    const glowR = new THREE.PointLight(0xff0000, 1, 10);
-    glowR.position.set(1.4, 1.0, 5.0);
-
-    enemyCarModel.add(taillightL, taillightR, glowL, glowR);
-
-    // Oculta tela de loading e inicia
+    // Esconde loading
     loadingScreen.style.display = 'none';
+
     animate();
 }
 
@@ -117,73 +75,72 @@ function createEnvironment() {
     roadGroup = new THREE.Group();
     scene.add(roadGroup);
 
-    // Chão (Deserto/Asfalto sujo infinito)
-    const groundGeo = new THREE.PlaneGeometry(3000, 3000);
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0c, roughness: 1.0 });
-    const ground = new THREE.Mesh(groundGeo, groundMat);
+    // Chão (Grama verde claro)
+    const groundGeo = new THREE.PlaneGeometry(1000, 1000);
+    const ground = new THREE.Mesh(groundGeo, matGrass);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.1;
     scene.add(ground);
 
-    // Pista Principal (Asfalto realista com mais reflexo)
-    const roadGeo = new THREE.PlaneGeometry(30, 3000);
-    const roadMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1e, roughness: 0.6, metalness: 0.1 });
-    const road = new THREE.Mesh(roadGeo, roadMat);
+    // Pista de Asfalto (Cinza claro pra dia)
+    const roadGeo = new THREE.PlaneGeometry(30, 2000);
+    const road = new THREE.Mesh(roadGeo, matRoad);
     road.rotation.x = -Math.PI / 2;
     road.position.y = 0;
-    road.receiveShadow = true;
     scene.add(road);
 
-    // Detalhes da pista (Faixas)
-    const markerGeo = new THREE.PlaneGeometry(0.4, 5);
-    const markerMat = new THREE.MeshBasicMaterial({ color: 0xdddddd });
-    
-    for (let i = 0; i < 150; i++) {
-        // Faixa Esquerda
-        const markerL = new THREE.Mesh(markerGeo, markerMat);
+    // Faixas
+    const markerGeo = new THREE.PlaneGeometry(0.5, 6);
+    for (let i = 0; i < 60; i++) {
+        const markerL = new THREE.Mesh(markerGeo, matMarker);
         markerL.rotation.x = -Math.PI / 2;
-        markerL.position.set(-5, 0.02, -i * 12);
+        markerL.position.set(-5, 0.05, -i * 15);
         roadGroup.add(markerL);
         roadMarkers.push(markerL);
 
-        // Faixa Direita
-        const markerR = new THREE.Mesh(markerGeo, markerMat);
+        const markerR = new THREE.Mesh(markerGeo, matMarker);
         markerR.rotation.x = -Math.PI / 2;
-        markerR.position.set(5, 0.02, -i * 12);
+        markerR.position.set(5, 0.05, -i * 15);
         roadGroup.add(markerR);
         roadMarkers.push(markerR);
+    }
+
+    // Predios laterais (Cidade)
+    const buildingMats = [
+        new THREE.MeshLambertMaterial({color: 0x888888}),
+        new THREE.MeshLambertMaterial({color: 0xaaaaaa}),
+        new THREE.MeshLambertMaterial({color: 0x99aacc})
+    ];
+
+    for(let i = 0; i < 40; i++) {
+        // Altura aleatoria
+        let height = 20 + Math.random() * 40;
+        let bGeo = new THREE.BoxGeometry(15, height, 15);
+        let bMat = buildingMats[Math.floor(Math.random() * buildingMats.length)];
+        
+        // Predio Esquerda
+        let bLeft = new THREE.Mesh(bGeo, bMat);
+        bLeft.position.set(-35 - Math.random()*20, height/2, -i * 30);
+        scene.add(bLeft);
+        cityBuildings.push(bLeft);
+
+        // Predio Direita
+        let bRight = new THREE.Mesh(bGeo, bMat);
+        bRight.position.set(35 + Math.random()*20, height/2, -i * 30);
+        scene.add(bRight);
+        cityBuildings.push(bRight);
     }
 }
 
 function createLighting() {
-    // Iluminação do céu noturno realista
-    const ambientLight = new THREE.AmbientLight(0x10101a, 0.2); // Bem escuro
-    scene.add(ambientLight);
+    // Luz Direcional forte vindo de cima (Sol)
+    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambient);
 
-    const dirLight = new THREE.DirectionalLight(0x303055, 0.5); // Luz da lua
-    dirLight.position.set(-100, 200, 50);
-    scene.add(dirLight);
-
-    // Faróis Ultra Realistas do nosso Carro Rosa (Luminosidade forte e quente)
-    const headlightColor = 0xffeebb;
-    
-    const headlight1 = new THREE.SpotLight(headlightColor, 4, 400, Math.PI/6, 0.5, 1.5);
-    headlight1.position.set(-2.5, 1.5, camera.position.z);
-    headlight1.castShadow = true;
-    headlight1.shadow.mapSize.width = 1024;
-    headlight1.shadow.mapSize.height = 1024;
-    scene.add(headlight1);
-    scene.add(headlight1.target);
-
-    const headlight2 = new THREE.SpotLight(headlightColor, 4, 400, Math.PI/6, 0.5, 1.5);
-    headlight2.position.set(2.5, 1.5, camera.position.z);
-    headlight2.castShadow = true;
-    headlight2.shadow.mapSize.width = 1024;
-    headlight2.shadow.mapSize.height = 1024;
-    scene.add(headlight2);
-    scene.add(headlight2.target);
-
-    scene.userData.headlights = { L: headlight1, R: headlight2 };
+    const sun = new THREE.DirectionalLight(0xffffee, 0.8);
+    sun.position.set(100, 300, 50);
+    scene.add(sun);
+    // REMOVIDO CASTSHADOW PARA SALVAR 60FPS
 }
 
 // Controles
@@ -204,27 +161,25 @@ function onKeyUp(e) {
 }
 
 function spawnObstacle() {
-    if(!enemyCarModel) return;
+    // Super otimizado: 2 caixas por carro
+    let obs = new THREE.Group();
+    
+    let chassiMat = carColors[Math.floor(Math.random() * carColors.length)];
+    let chassi = new THREE.Mesh(carGeo, chassiMat);
+    chassi.position.y = 0.75;
+    obs.add(chassi);
 
-    // Clonar o modelo estático base
-    const obs = enemyCarModel.clone();
-    
-    // Trocar a cor do chassi aleatoriamente
-    const colors = [0x990000, 0x000099, 0x005500, 0x555555, 0xdddddd, 0x888800];
-    const color = colors[Math.floor(Math.random() * colors.length)];
-    
-    // Percorre filhos para mudar a cor apenas do chassi (primeiro filho de mesh)
-    obs.children[0].material = new THREE.MeshStandardMaterial({ 
-        color: color, roughness: 0.1, metalness: 0.7 
-    });
+    let vidro = new THREE.Mesh(windowGeo, matWindow);
+    vidro.position.y = 1.6;
+    obs.add(vidro);
     
     // Posições realistas de faixa (-10, 0, 10 na pista de 30)
     const lane = (Math.floor(Math.random() * 3) - 1) * 10;
     
-    obs.position.set(lane, 0, camera.position.z - 300 - Math.random() * 200);
+    obs.position.set(lane, 0, camera.position.z - 250 - Math.random() * 100);
     
-    // Carros movem-se ligeiramente pra frente
-    obs.userData.speedZ = (Math.random() * 1.5) + 0.5;
+    // Velocidade do trafego
+    obs.userData.speedZ = (Math.random() * 1.5) + 1.0;
 
     scene.add(obs);
     obstacles.push(obs);
@@ -236,85 +191,84 @@ function updateGame() {
     // Aceleração
     if (keys.up) speed += 0.05;
     if (keys.down) speed -= 0.1;
-    
     if (!keys.up && !keys.down) speed *= 0.99;
 
-    speed = Math.max(0.0, Math.min(speed, 9.0)); 
+    speed = Math.max(0.0, Math.min(speed, 4.5)); // Limite de velocidade bem menor
     
+    // Movimento do mundo
     camera.position.z -= speed;
     distance += speed / 10;
     
-    // Direção simulando a inércia realista de um carro (peso)
-    let maxSteerSpeed = 0.3 * (speed / 4);
+    // Curva Bruta (direção responde MUITO mais rápido)
+    let maxSteerSpeed = 0.6 * (speed / 3);
+    if(speed < 1.0) maxSteerSpeed = 0;
+
     if (keys.left) carPositionX -= maxSteerSpeed;
     if (keys.right) carPositionX += maxSteerSpeed;
     
     carPositionX = Math.max(-12, Math.min(carPositionX, 12));
     
-    // Movimento suave da câmera pra acompanhar o volante e o carro
-    camera.position.x += ((carPositionX - 1.0) - camera.position.x) * 0.1; 
+    // Câmera acompanha de forma mais agressiva a direção
+    camera.position.x += ((carPositionX - 1.0) - camera.position.x) * 0.35; 
     
-    // Tilt realista, ao invés do carro apenas andar de lado, a câmera inclina (drift)
-    let steerTarget = keys.left ? 0.05 : (keys.right ? -0.05 : 0);
-    camera.rotation.z += (steerTarget - camera.rotation.z) * 0.1;
-    // Vibrar levemente na alta velocidade
-    camera.position.y = 1.3 + (Math.random() * (speed*0.005));
+    // Volante inclina mais
+    let steerTarget = keys.left ? 0.08 : (keys.right ? -0.08 : 0);
+    camera.rotation.z += (steerTarget - camera.rotation.z) * 0.2;
+    // Tremedeira de velocidade diminuida pra incomodar menos o FPS
+    camera.position.y = 1.3 + (Math.random() * (speed*0.002));
 
-    // Faróis seguem a câmera estritamente
-    const hl = scene.userData.headlights;
-    if (hl) {
-        hl.L.position.set(camera.position.x - 1.5, 1.5, camera.position.z);
-        hl.L.target.position.set(camera.position.x - 1.5, 0, camera.position.z - 80);
-        
-        hl.R.position.set(camera.position.x + 3.5, 1.5, camera.position.z);
-        hl.R.target.position.set(camera.position.x + 3.5, 0, camera.position.z - 80);
-    }
-
-    // UI
-    steering = keys.left ? -60 : (keys.right ? 60 : 0);
-    // Suavizar giro do volante
-    let currentRotation = parseFloat(steeringWheel.style.transform.replace(/[^0-9\-.,]/g, '').split(',')[1] || 0);
+    // UI Updates
+    steering = keys.left ? -75 : (keys.right ? 75 : 0); // Vira 75 graus bruscamente
+    
+    let currentRotation = parseFloat(steeringWheel.style.transform.replace(/[^0-9\-.,]/g, '').split(',')[2] || 0);
     if(isNaN(currentRotation)) currentRotation = 0;
-    let newRotation = currentRotation + (steering - currentRotation) * 0.1;
-    steeringWheel.style.transform = `translateX(-50%) rotate(${newRotation}deg)`;
+    let newRot = currentRotation + (steering - currentRotation) * 0.4; // Responsividade alta
+    
+    // Rotate Steering wheel and the Hands together!
+    steeringWheel.style.transform = `translateX(-50%) rotate(${newRot}deg)`;
+    leftHand.style.transform = `rotate(${30 + newRot}deg) translateY(${Math.abs(newRot)*0.2}px)`;
+    rightHand.style.transform = `rotate(${-30 + newRot}deg) translateY(${Math.abs(newRot)*0.2}px)`;
 
-    // Km/h text (Multiplier to look realistic, ~150kmh max)
-    speedText.innerText = Math.floor(speed * 18) + "\nkm/h";
-    scoreText.innerText = "Dist: " + Math.floor(distance) + "m";
+    // Speed UI
+    speedText.innerHTML = `${Math.floor(speed * 18)}<br><span style="font-size:16px;color:#aaa">km/h</span>`;
+    scoreText.innerText = "Pontos: " + Math.floor(distance);
 
-    // Loop na estrada
+    // Efeito de movimento do espelho (background position trick pra fingir reflexo da pista rápida)
+    mirrorReflect.style.backgroundPosition = `0px ${distance * 5}px`;
+
+    // Looping da estrada
     roadMarkers.forEach(m => {
-        if (m.position.z > camera.position.z + 10) {
-            m.position.z -= 1800;
-        }
+        if (m.position.z > camera.position.z + 10) m.position.z -= 900;
     });
 
-    // Spawner de tráfego denso
-    let spawnRate = 0.05 + (speed * 0.01);
-    if (Math.random() < spawnRate && obstacles.length < 30) {
+    // Looping dos predios
+    cityBuildings.forEach(b => {
+        if (b.position.z > camera.position.z + 20) b.position.z -= 1200;
+    });
+
+    // Trafego Spawner
+    let spawnRate = 0.02 + (speed * 0.005);
+    if (Math.random() < spawnRate && obstacles.length < 12) { // Max traffic bem menor
         spawnObstacle();
     }
 
-    // Lógica dos Carros e Colisão (Física aprimorada pro chassi de [4.2 x 9])
+    // Calculo Colisao (Box Simplificada e rapida)
     for (let i = obstacles.length - 1; i >= 0; i--) {
         let obs = obstacles[i];
         
-        // Os carros se movem um pouco
         obs.position.z -= obs.userData.speedZ;
         
-        // Câmera está no banco do motorista (X: -1.0 a partir do centro do nosso carro)
-        // Largura do nosso carro = ~4.0, Comprimento = ~9.0
         let myCarCenterX = camera.position.x + 1.0; 
-        
         let dx = Math.abs(myCarCenterX - obs.position.x);
         let dz = Math.abs(camera.position.z - obs.position.z);
         
-        // Hitbox realista (4m de largura, 9m comprimento aproximado pro nosso carro e pro inimigo)
-        if (dx < 4.0 && dz < 8.0) {
+        // Bateu (caixa da colisão ajustada para carro mais lento)
+        if (dx < 3.0 && dz < 6.0) {
             isGameOver = true;
             gameOverScreen.style.display = 'flex';
         }
 
+        // Deletou
         if (obs.position.z > camera.position.z + 20) {
             scene.remove(obs);
             obstacles.splice(i, 1);
@@ -334,4 +288,5 @@ function animate() {
     renderer.render(scene, camera);
 }
 
+// Start
 init();
