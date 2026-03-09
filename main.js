@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 let scene, camera, renderer;
 let speed = 2.0;
@@ -84,12 +84,33 @@ function createEnvironment() {
     ground.position.y = -0.1;
     scene.add(ground);
 
-    // Pista de Asfalto (Larga e Cinza realista)
+    // Pista de Asfalto (Asfalto ultra realista com reflexos)
     const roadGeo = new THREE.PlaneGeometry(35, 4000);
-    const road = new THREE.Mesh(roadGeo, matRoad);
+    const roadMat = new THREE.MeshStandardMaterial({ 
+        color: 0x050505, 
+        roughness: 0.1, 
+        metalness: 0.6 
+    });
+    const road = new THREE.Mesh(roadGeo, roadMat);
     road.rotation.x = -Math.PI / 2;
     road.position.y = 0;
+    road.receiveShadow = true;
     scene.add(road);
+
+    // Linhas laterais neon rosa
+    const neonLineMat = new THREE.MeshStandardMaterial({ 
+        color: 0xff1493, 
+        emissive: 0xff1493, 
+        emissiveIntensity: 1 
+    });
+    const leftLine = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 4000), neonLineMat);
+    leftLine.rotation.x = -Math.PI / 2;
+    leftLine.position.set(-17.25, 0.05, 0);
+    scene.add(leftLine);
+    
+    const rightLine = leftLine.clone();
+    rightLine.position.x = 17.25;
+    scene.add(rightLine);
 
     // Faixas
     const markerGeo = new THREE.PlaneGeometry(0.4, 8);
@@ -107,11 +128,12 @@ function createEnvironment() {
         roadMarkers.push(markerR);
     }
 
-    // Predios laterais (Cidade)
+    // Predios laterais (Cidade Neon)
+    const buildingGeo = new THREE.BoxGeometry(15, 60, 15);
     const buildingMats = [
-        new THREE.MeshLambertMaterial({color: 0x999999}),
-        new THREE.MeshLambertMaterial({color: 0xbbbbbb}),
-        new THREE.MeshLambertMaterial({color: 0xaabbcc})
+        new THREE.MeshStandardMaterial({color: 0x0a0a1a, emissive: 0x00ffff, emissiveIntensity: 0.1}),
+        new THREE.MeshStandardMaterial({color: 0x0a0a0a, emissive: 0xff1493, emissiveIntensity: 0.1}),
+        new THREE.MeshStandardMaterial({color: 0x1a1a1a, emissive: 0x303055, emissiveIntensity: 0.2})
     ];
 
     for(let i = 0; i < 60; i++) { // Mais predios na distancia
@@ -133,72 +155,75 @@ function createEnvironment() {
 }
 
 function createLighting() {
-    const ambient = new THREE.AmbientLight(0xffffff, 0.7); // Luz do dia claro
+    const ambient = new THREE.AmbientLight(0x4040ff, 0.2); // Luz noturna puxada pro azul
     scene.add(ambient);
 
-    const sun = new THREE.DirectionalLight(0xffffee, 1.0);
-    sun.position.set(200, 500, 100);
-    scene.add(sun);
+    const moon = new THREE.DirectionalLight(0x303055, 0.5);
+    moon.position.set(-100, 200, 50);
+    scene.add(moon);
 }
 
 function loadRealCarModel() {
-    // Carregando um modelo de um fusca/esportivo em GLTF via net
-    // (URL Publico permissivo confiavel de exemplos do THREE.js ou low-poly comum)
-    const loader = new GLTFLoader();
-    
-    // Substituindo pelo carregamento procedural muito mais detalhado
+    // Materiais premium neon
     const bodyMat = new THREE.MeshPhysicalMaterial({
-        color: activeCarColor, metalness: 0.6, roughness: 0.4, clearcoat: 1.0
+        color: activeCarColor, 
+        metalness: 0.9, 
+        roughness: 0.1, 
+        clearcoat: 1.0,
+        emissive: activeCarColor,
+        emissiveIntensity: 0.2
     });
     const glassMat = new THREE.MeshPhysicalMaterial({
-        color: 0x000000, metalness: 0.9, roughness: 0.1, transmission: 0.5
+        color: 0x050505, 
+        metalness: 1, 
+        roughness: 0, 
+        transmission: 0.5,
+        transparent: true
     });
-    const blackMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+    const blackMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.5 });
+    const neonPinkMat = new THREE.MeshStandardMaterial({ 
+        color: 0xff1493, 
+        emissive: 0xff1493, 
+        emissiveIntensity: 2 
+    });
 
-    // Base/Chassi baixo e esguio (Esportivo)
-    const chassis = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.9, 9.5), bodyMat);
+    // Base/Chassi
+    const chassis = new THREE.Mesh(new THREE.BoxGeometry(4.0, 1.0, 9.5), bodyMat);
     chassis.position.y = 0.6;
+    chassis.castShadow = true;
     enemyCarModel.add(chassis);
 
-    // Cabine aerodinamica
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.8, 4.5), glassMat);
-    cabin.position.set(0, 1.45, -0.5);
+    // Detalhes Piano Black
+    const trim = new THREE.Mesh(new THREE.BoxGeometry(4.1, 0.2, 9.6), blackMat);
+    trim.position.y = 0.2;
+    enemyCarModel.add(trim);
+
+    // Cabine
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.9, 4.5), glassMat);
+    cabin.position.set(0, 1.5, -0.5);
     enemyCarModel.add(cabin);
     
-    // Frente inclinada (Capô esportivo)
-    const hoodGeo = new THREE.BufferGeometry();
-    // Simplified slope using a rotated box for performance but elegant look
-    const capuz = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.4, 2.5), bodyMat);
-    capuz.rotation.x = 0.15;
-    capuz.position.set(0, 0.9, 3.5);
-    enemyCarModel.add(capuz);
-    
-    // Rodas realistas de liga leve preta com pneus
-    const wheelGeo = new THREE.CylinderGeometry(0.75, 0.75, 0.6, 24);
+    // Rodas com aro neon
+    const wheelGeo = new THREE.CylinderGeometry(0.75, 0.75, 0.6, 32);
     wheelGeo.rotateZ(Math.PI / 2);
-    const rimMat = new THREE.MeshStandardMaterial({color: 0x333333, metalness: 0.8});
     
     [ [-2.1, 0.75, 2.8], [2.1, 0.75, 2.8], [-2.1, 0.75, -2.8], [2.1, 0.75, -2.8] ].forEach(pos => {
-        const wheel = new THREE.Mesh(wheelGeo, blackMat); // Pneu
-        const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.62, 16), rimMat); // Roda
-        rim.rotateZ(Math.PI/2);
-        wheel.add(rim);
-        wheel.position.set(...pos);
-        enemyCarModel.add(wheel);
+        const wheelGroup = new THREE.Group();
+        const tire = new THREE.Mesh(wheelGeo, blackMat);
+        const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.62, 32), neonPinkMat);
+        rim.rotateZ(Math.PI / 2);
+        wheelGroup.add(tire, rim);
+        wheelGroup.position.set(...pos);
+        enemyCarModel.add(wheelGroup);
     });
 
-    // Lanternas trazeiras LED e Farol
-    const tailMat = new THREE.MeshBasicMaterial({color: 0xff0000});
-    const tailL = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.2, 0.1), tailMat);
+    // Lanternas traseiras Neon
+    const tailL = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.3, 0.1), neonPinkMat);
     tailL.position.set(-1.2, 0.8, -4.76);
     const tailR = tailL.clone();
     tailR.position.set(1.2, 0.8, -4.76);
     enemyCarModel.add(tailL, tailR);
 
-    // Roda virada pra trás pro usuário (os carros andam na mesma direção ou contra? Na nossa ref, é na mesma)
-    // Então faróis traseiros ficam de frente pra câmera
-    
-    // Tudo ok, esconde loading
     loadingScreen.style.display = 'none';
     animate();
 }
