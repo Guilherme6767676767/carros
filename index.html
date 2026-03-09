@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Racing Limits - Day City</title>
+    <title>Neon Racer 3D - Premium Edition</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <!-- Three.js carregado de forma global -->
+    <!-- Three.js Global Script - Important for compatibility -->
     <script src="https://unpkg.com/three@0.162.0/build/three.min.js"></script>
 </head>
 <body>
@@ -16,35 +16,22 @@
     
     <!-- UI Overlay for Dashboard & Mirror -->
     <div id="overlay">
-        <!-- Rearview Mirror (Center Top) -->
+        <!-- Rearview Mirror -->
         <div id="rearview-mirror">
             <div class="mirror-reflection"></div>
         </div>
 
-        <!-- Windshield Frame (A-Pillars) -->
-        <div id="left-pillar" class="pillar"></div>
-        <div id="right-pillar" class="pillar"></div>
-
-        <!-- Dashboard Bottom -->
+        <!-- Dashboard Structure -->
         <div id="dashboard">
-            <!-- Left Vent -->
-            <div class="air-vent left"></div>
-            <!-- Center Console -->
             <div id="center-console">
-                <div class="air-vent"></div>
-                <div class="air-vent"></div>
-                <div class="screen">GPS</div>
+                <div class="screen">GPS ACTIVE</div>
             </div>
-            <!-- Right Vent -->
-            <div class="air-vent right"></div>
         </div>
 
-        <!-- Driver POV (Steering Wheel + Hands + Speedometer) -->
+        <!-- Steering & Speedometer -->
         <div id="driver-pov">
-            <!-- Illusion of Driver Hands holding the wheel -->
             <div id="left-hand" class="hand"></div>
             <div id="right-hand" class="hand"></div>
-            
             <div id="steering-wheel">
                 <div class="wheel-center">
                     <div id="speedometer">0<br><span style="font-size:12px;color:#aaa">km/h</span></div>
@@ -52,35 +39,46 @@
             </div>
         </div>
 
-        <!-- Score top right -->
-        <div id="score">Pontos: 0</div>
+        <div id="score">Moedas: 0 | Dist: 0m</div>
     </div>
     
-    <div id="loading">Carregando Cidade de Luxo...</div>
+    <div id="loading">CARREGANDO MUNDO NEON...</div>
 
-    <!-- Garage / Shop UI -->
+    <!-- Garage UI -->
     <div id="garage" style="display: none;">
-        <h1>Garagem</h1>
-        <p>Moedas: <span id="garage-coins" style="color:#ffdd00">0</span></p>
+        <h1>GARAGEM PREMIUM</h1>
+        <p>SUAS MOEDAS: <span id="garage-coins" style="color:#ffdd00">0</span></p>
         <div id="car-options">
-            <div class="car-item" onclick="window.buyCar(0, 0)">Fusca Branco (Grátis)</div>
-            <div class="car-item" onclick="window.buyCar(1, 50)">Esportivo Vermelho (50 Moedas)</div>
-            <div class="car-item" onclick="window.buyCar(2, 150)">Luxo Preto (150 Moedas)</div>
-            <div class="car-item" onclick="window.buyCar(3, 300)">Dourado Raro (300 Moedas)</div>
+            <div class="car-item" onclick="window.buyCar(0, 0)">
+                <div style="background:#ffffff; height:20px; border-radius:5px; margin-bottom:5px;"></div>
+                Fusca Branco (Grátis)
+            </div>
+            <div class="car-item" onclick="window.buyCar(1, 50)">
+                <div style="background:#ff0000; height:20px; border-radius:5px; margin-bottom:5px;"></div>
+                Esportivo Vermelho (50)
+            </div>
+            <div class="car-item" onclick="window.buyCar(2, 150)">
+                <div style="background:#111111; height:20px; border-radius:5px; margin-bottom:5px;"></div>
+                Luxo Preto (150)
+            </div>
+            <div class="car-item" onclick="window.buyCar(3, 300)">
+                <div style="background:#ffdd00; height:20px; border-radius:5px; margin-bottom:5px;"></div>
+                Dourado Raro (300)
+            </div>
         </div>
-        <button onclick="window.closeGarage()">Voltar</button>
+        <button class="ui-btn" onclick="window.closeGarage()">VOLTAR</button>
     </div>
 
+    <!-- Game Over -->
     <div id="game-over" style="display: none;">
-        <h1>BATIDA!</h1>
+        <h1 style="color:#ff3333">BATIDA!</h1>
         <p id="coin-result">Você coletou 0 moedas!</p>
-        <div style="display:flex; gap:10px;">
-            <button onclick="location.reload()">Correr De Novo</button>
-            <button onclick="window.openGarage()">Garagem</button>
+        <div style="display:flex; gap:20px;">
+            <button class="ui-btn" onclick="location.reload()">REPETIR</button>
+            <button class="ui-btn" style="background:#444" onclick="window.openGarage()">GARAGEM</button>
         </div>
     </div>
     
-    <!-- Game Source (Carregado de forma clássica para evitar erros de módulo) -->
     <script src="main.js"></script>
 </body>
 </html>
