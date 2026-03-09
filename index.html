@@ -6,8 +6,14 @@
     <title>Racing Limits - Day City</title>
     <link rel="stylesheet" href="style.css">
     
-    <!-- Three.js from CDN for performance -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
 </head>
 <body>
     <div id="game-container"></div>
@@ -54,15 +60,31 @@
         <div id="score">Pontos: 0</div>
     </div>
     
-    <div id="loading">Carregando Cidade...</div>
+    <div id="loading">Carregando Cidade de Luxo...</div>
+
+    <!-- Garage / Shop UI -->
+    <div id="garage" style="display: none;">
+        <h1>Garagem</h1>
+        <p>Moedas: <span id="garage-coins" style="color:#ffdd00">0</span></p>
+        <div id="car-options">
+            <div class="car-item" onclick="window.buyCar(0, 0)">Fusca Branco (Grátis)</div>
+            <div class="car-item" onclick="window.buyCar(1, 50)">Esportivo Vermelho (50 Moedas)</div>
+            <div class="car-item" onclick="window.buyCar(2, 150)">Luxo Preto (150 Moedas)</div>
+            <div class="car-item" onclick="window.buyCar(3, 300)">Dourado Raro (300 Moedas)</div>
+        </div>
+        <button onclick="window.closeGarage()">Voltar</button>
+    </div>
 
     <div id="game-over" style="display: none;">
         <h1>BATIDA!</h1>
-        <p>Você bateu no trânsito!</p>
-        <button onclick="location.reload()">Correr Novamente</button>
+        <p id="coin-result">Você coletou 0 moedas!</p>
+        <div style="display:flex; gap:10px;">
+            <button onclick="location.reload()">Correr De Novo</button>
+            <button onclick="window.openGarage()">Garagem</button>
+        </div>
     </div>
     
     <!-- Game Source -->
-    <script src="main.js"></script>
+    <script type="module" src="main.js"></script>
 </body>
 </html>
