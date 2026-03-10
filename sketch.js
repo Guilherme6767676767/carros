@@ -16,7 +16,12 @@ let carrosLoja = [
   { nome: "Rosa Retro", preco: 0, comprado: true, cor: [255, 50, 150], modelo: 0 },
   { nome: "Velocista Azul", preco: 500, comprado: false, cor: [50, 150, 255], modelo: 1 },
   { nome: "Besta Verde", preco: 1500, comprado: false, cor: [50, 255, 50], modelo: 2 },
-  { nome: "Cyberpunk Raro", preco: 5000, comprado: false, cor: [20, 20, 20], modelo: 3, neon: [0, 255, 255] }
+  { nome: "Cyberpunk Raro", preco: 5000, comprado: false, cor: [20, 20, 20], modelo: 3, neon: [0, 255, 255] },
+  { nome: "Phantom Roxo", preco: 3000, comprado: false, cor: [120, 0, 200], modelo: 4, neon: [200, 100, 255] },
+  { nome: "Dragão Vermelho", preco: 8000, comprado: false, cor: [200, 20, 20], modelo: 5, neon: [255, 100, 0] },
+  { nome: "Stealth Noturno", preco: 12000, comprado: false, cor: [15, 15, 25], modelo: 6, neon: [0, 200, 100] },
+  { nome: "Relâmpago Dourado", preco: 20000, comprado: false, cor: [180, 150, 0], modelo: 7, neon: [255, 215, 0] },
+  { nome: "Hyper Nova", preco: 50000, comprado: false, cor: [255, 255, 255], modelo: 8, neon: [255, 0, 255], especial: true }
 ];
 
 let linhasEstrada = [];
@@ -110,11 +115,14 @@ function desenharCenarioFundo() {
 }
 
 function jogar() {
-  velocidadePista = 5 + (nivel * 0.8);
+  // Velocidade aumenta com o tempo de forma logarítmica (nunca fica absurda)
+  // Começa em 5, cresce rápido no início e desacelera, máximo ~14
+  velocidadePista = 5 + 4 * Math.log(1 + nivel * 0.5);
+  velocidadePista = min(velocidadePista, 14); // Teto máximo
   scoreDistancia += velocidadePista / 100;
 
-  // Nível sobe baseado na distância
-  if (scoreDistancia > nivel * 15) {
+  // Nível sobe baseado na distância (mais devagar conforme avança)
+  if (scoreDistancia > nivel * 12 + (nivel * nivel * 0.5)) {
     nivel++;
   }
 
@@ -443,6 +451,107 @@ function desenharCarroModelado(x, y, prop, angulo) {
     rect(-20, -32, 40, 65, 4); // Mais largo
     fill(30);
     rect(-10, -35, 20, 15); // capô reforçado
+
+  } else if (prop.modelo === 4) {
+    // PHANTOM ROXO — Aerodinâmico, linhas diagonais neon
+    fill(prop.cor);
+    beginShape();
+    vertex(-16, 35); vertex(-20, -10); vertex(-10, -38);
+    vertex(10, -38); vertex(20, -10); vertex(16, 35);
+    endShape(CLOSE);
+    // Linhas neon diagonais
+    stroke(prop.neon);
+    strokeWeight(2);
+    line(-14, 20, -6, -25);
+    line(14, 20, 6, -25);
+    // Detalhe central
+    line(0, 30, 0, -30);
+    noStroke();
+
+  } else if (prop.modelo === 5) {
+    // DRAGÃO VERMELHO — Largo, agressivo, spoiler traseiro, chamas
+    fill(prop.cor);
+    rect(-22, -30, 44, 65, 3);
+    // Spoiler traseiro
+    fill(100, 10, 10);
+    rect(-24, 28, 48, 6, 2);
+    // Stripes de chama
+    stroke(prop.neon);
+    strokeWeight(2);
+    line(-12, 30, -8, 5);
+    line(-8, 5, -14, -15);
+    line(12, 30, 8, 5);
+    line(8, 5, 14, -15);
+    noStroke();
+    // Capô agressivo
+    fill(50, 5, 5);
+    triangle(-15, -30, 0, -38, 15, -30);
+
+  } else if (prop.modelo === 6) {
+    // STEALTH NOTURNO — Quase invisível, apenas contornos neon
+    fill(prop.cor);
+    beginShape();
+    vertex(-14, 35); vertex(-18, 0); vertex(-12, -36);
+    vertex(12, -36); vertex(18, 0); vertex(14, 35);
+    endShape(CLOSE);
+    // Contorno neon fraco pulsante
+    let pulso = 150 + sin(frameCount * 0.08) * 100;
+    stroke(red(color(prop.neon)), green(color(prop.neon)), blue(color(prop.neon)), pulso);
+    strokeWeight(1);
+    noFill();
+    beginShape();
+    vertex(-14, 35); vertex(-18, 0); vertex(-12, -36);
+    vertex(12, -36); vertex(18, 0); vertex(14, 35);
+    endShape(CLOSE);
+    noStroke();
+
+  } else if (prop.modelo === 7) {
+    // RELÂMPAGO DOURADO — Luxuoso, brilho dourado, detalhes cromados
+    // Brilho de fundo
+    fill(255, 215, 0, 30);
+    ellipse(0, 0, 60, 80);
+    fill(prop.cor);
+    rect(-18, -35, 36, 70, 10);
+    // Faixa central cromada
+    fill(255, 235, 100);
+    rect(-3, -33, 6, 66, 3);
+    // Detalhes laterais dourados
+    stroke(prop.neon);
+    strokeWeight(2);
+    line(-18, -20, -18, 25);
+    line(18, -20, 18, 25);
+    noStroke();
+    // Ornamento no capô
+    fill(255, 255, 200);
+    triangle(-4, -38, 0, -44, 4, -38);
+
+  } else if (prop.modelo === 8) {
+    // HYPER NOVA — Futurista supremo, efeitos de arco-íris pulsante
+    let hueShift = (frameCount * 2) % 360;
+    colorMode(HSB, 360, 100, 100);
+    // Aura energética
+    let auraAlpha = 40 + sin(frameCount * 0.1) * 20;
+    fill(hueShift, 80, 100, auraAlpha / 100);
+    ellipse(0, 0, 55, 85);
+    // Corpo com gradiente animado
+    fill(hueShift, 60, 100);
+    beginShape();
+    vertex(-14, 35); vertex(-20, 5); vertex(-16, -30);
+    vertex(-6, -40); vertex(6, -40); vertex(16, -30);
+    vertex(20, 5); vertex(14, 35);
+    endShape(CLOSE);
+    // Linhas de energia internas
+    stroke((hueShift + 180) % 360, 100, 100);
+    strokeWeight(1.5);
+    line(-10, 25, -6, -30);
+    line(10, 25, 6, -30);
+    line(0, 30, 0, -35);
+    noStroke();
+    // Núcleo central brilhante
+    fill((hueShift + 90) % 360, 100, 100);
+    ellipse(0, 0, 10, 10);
+    colorMode(RGB, 255);
+
   } else {
     // BASICO E OUTROS
     fill(prop.cor);
@@ -455,16 +564,39 @@ function desenharCarroModelado(x, y, prop, angulo) {
   fill(150, 200, 255, 80);
   rect(-12, -13, 24, 8, 2);
 
-  if (prop.modelo !== 3) {
+  if (prop.modelo === 3 || prop.modelo === 6) {
+    // Faróis Cyberpunk / Stealth
+    fill(prop.neon || [255, 255, 200]);
+    rect(-16, -35, 12, 4);
+    rect(4, -35, 12, 4);
+  } else if (prop.modelo === 5) {
+    // Faróis agressivos do Dragão
+    fill(255, 150, 0);
+    triangle(-14, -30, -6, -30, -10, -36);
+    triangle(6, -30, 14, -30, 10, -36);
+  } else if (prop.modelo === 7) {
+    // Faróis dourados luxuosos
+    fill(255, 235, 100);
+    ellipse(-10, -35, 10, 6);
+    ellipse(10, -35, 10, 6);
+  } else if (prop.modelo === 8) {
+    // Faróis Hyper Nova — brilham com arco-íris
+    let hue2 = (frameCount * 2) % 360;
+    colorMode(HSB, 360, 100, 100);
+    fill(hue2, 100, 100);
+    ellipse(-10, -38, 8, 8);
+    ellipse(10, -38, 8, 8);
+    colorMode(RGB, 255);
+  } else if (prop.modelo === 4) {
+    // Faróis Phantom — finos e neon
+    fill(prop.neon || [200, 100, 255]);
+    rect(-12, -37, 8, 3);
+    rect(4, -37, 8, 3);
+  } else {
     // Faróis Dianteiros padrão
     fill(255, 255, 200);
     ellipse(-10, -32, 8, 5);
     ellipse(10, -32, 8, 5);
-  } else {
-    // Faróis Cyberpunk
-    fill(prop.neon);
-    rect(-16, -35, 12, 4);
-    rect(4, -35, 12, 4);
   }
 
   // Lanternas Traseiras
